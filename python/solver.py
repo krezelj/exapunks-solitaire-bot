@@ -1,15 +1,6 @@
 
-import numpy as np
 from game_elements import *
-import os
-
-
-"""
-How is the board encoded?
-
-We have an array of size ten where first 9 elements represent each rank and the last element represents the empty slot
-
-"""
+import time
 
 def deapply_move(board_state, move):
     source, target, size = move
@@ -84,23 +75,22 @@ def get_moves(board_state : Board, can_remove_from_slot=True):
     return sort_moves(move_list)
 
 
-def solve(board_state):
-    all_hashes = set()
-    hash_omits = 0
-
+def solve(board_state, stop_at_iterations=-1):
     move_stack = []
     branch_size_stack = []
     current_move_list = []
+    all_hashes = set()
 
     new_moves = get_moves(board_state)
     branch_size_stack.append(len(new_moves))
     move_stack.extend(new_moves)
 
+    # stat variables
     moves_evaluated = 0
+    hash_omits = 0
     while len(move_stack) > 0:
-        os.system('cls')
-        print(f"Moves evaluated:\t{moves_evaluated}")
-        print(f"Moves ommited:\t{hash_omits}")
+        if (moves_evaluated == stop_at_iterations): 
+            return [], moves_evaluated, hash_omits
         moves_evaluated += 1
 
         current_move = move_stack.pop()
@@ -118,7 +108,7 @@ def solve(board_state):
         else:
             all_hashes.add(board_hash)
             if (check_win_condition(board_state)):
-                return current_move_list
+                return current_move_list, moves_evaluated, hash_omits
 
             can_remove_from_slot = current_move[1] != -1
             new_moves = get_moves(board_state, can_remove_from_slot)
@@ -126,19 +116,30 @@ def solve(board_state):
             branch_size_stack.append(len(new_moves))
 
         while (branch_size_stack[-1] == 0):
+            if (len(current_move_list) == 0):
+                return current_move_list, moves_evaluated, hash_omits
             deapply_move(board_state, current_move_list.pop())
             branch_size_stack.pop()
             if (len(branch_size_stack) == 0):
-                return current_move_list # empty list ?
+                return current_move_list, moves_evaluated, hash_omits
 
             branch_size_stack[-1] -= 1
 
-    return current_move_list # empty list
+    return current_move_list, moves_evaluated, hash_omits
 
 
+def timed_solve(board_state, stop_at_iterations=-1):
+    start_time = time.time()
+    result = solve(board_state, stop_at_iterations)
+    end_time = time.time()
+    move_list = result[0]
+    moves_evaluated, hash_omits = result[1:]
+    return len(move_list), moves_evaluated, hash_omits, end_time - start_time
 
 
-def main():
+def benchmark(n=1000, stop_at_iterations=1000):
+    import random
+    random.seed(1)
     card_dict = {
         'r6': Card(value=6, colour=C_RED),
         'b6': Card(value=6, colour=C_BLACK),
@@ -155,23 +156,42 @@ def main():
         'h': Card(suit=3),
         's': Card(suit=4),
     }
-    ranks = [
-        Rank(cards=[*map(card_dict.get, ['b10',   'c',   'h',    'h'])]),
-        Rank(cards=[*map(card_dict.get, ['r6',   'r10',   'd',   'r8'])]),
-        Rank(cards=[*map(card_dict.get, ['b8',   'h',   'h',    's'])]),
-        Rank(cards=[*map(card_dict.get, ['r7',   'c',  'r10',   'r7'])]),
-        Rank(cards=[*map(card_dict.get, ['r6',  'r9',   'r9',   'd'])]),
-        Rank(cards=[*map(card_dict.get, ['b9',   's',    'b10',    'c'])]),
-        Rank(cards=[*map(card_dict.get, ['b9',  'd',    'c',   'b6'])]),
-        Rank(cards=[*map(card_dict.get, ['b7',  'r8',  's',   'b8'])]),
-        Rank(cards=[*map(card_dict.get, ['b7',  'd',   'b6',    's'])]),
-    ]
-    board_state = Board(ranks)
-    moves = solve(board_state)
-    for move in moves:
-        print(f"{'slot' if move[0] == -1 else move[0]}\t-->\t{'slot' if move[1] == -1 else move[1]} ({move[2]})")
-    
+    cards = ['b6', 'b6', 'r6', 'r6', 'b7', 'b7', 'r7', 'r7', 
+             'b8', 'b8', 'r8', 'r8', 'b9', 'b9', 'r9', 'r9',
+             'b10', 'b10', 'r10', 'r10', 'c', 'c', 'c', 'c', 
+              'd', 'd', 'd', 'd', 'h', 'h', 'h', 'h', 's', 's', 's', 's']
 
+    results = []
+    skipped_games = 0
+    for _ in range(n):
+        random.shuffle(cards)
+        ranks = [
+            Rank(cards=[*map(card_dict.get, cards[:4])]),
+            Rank(cards=[*map(card_dict.get, cards[4:8])]),
+            Rank(cards=[*map(card_dict.get, cards[8:12])]),
+            Rank(cards=[*map(card_dict.get, cards[12:16])]),
+            Rank(cards=[*map(card_dict.get, cards[16:20])]),
+            Rank(cards=[*map(card_dict.get, cards[20:24])]),
+            Rank(cards=[*map(card_dict.get, cards[24:28])]),
+            Rank(cards=[*map(card_dict.get, cards[28:32])]),
+            Rank(cards=[*map(card_dict.get, cards[32:])]),
+        ]
+        board_state = Board(ranks)
+
+        results.append(timed_solve(board_state, stop_at_iterations))
+        moves = solve(board_state)
+        if moves is None: 
+            skipped_games+=1
+    
+    return results, skipped_games
+
+
+
+
+def main():
+    import cProfile
+    cProfile.run("benchmark()")
+    
 
 if __name__ == '__main__':
     main()
