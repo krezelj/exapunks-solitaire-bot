@@ -128,66 +128,6 @@ def solve(board_state, stop_at_iterations=-1):
     return current_move_list, moves_evaluated, hash_omits
 
 
-def timed_solve(board_state, stop_at_iterations=-1):
-    start_time = time.time()
-    result = solve(board_state, stop_at_iterations)
-    end_time = time.time()
-    move_list = result[0]
-    moves_evaluated, hash_omits = result[1:]
-    return len(move_list), moves_evaluated, hash_omits, end_time - start_time
-
-
-def benchmark(n=1000, stop_at_iterations=1000):
-    import random
-    random.seed(1)
-    card_dict = {
-        'r6': Card(value=6, colour=C_RED),
-        'b6': Card(value=6, colour=C_BLACK),
-        'r7': Card(value=7, colour=C_RED),
-        'b7': Card(value=7, colour=C_BLACK),
-        'r8': Card(value=8, colour=C_RED),
-        'b8': Card(value=8, colour=C_BLACK),
-        'r9': Card(value=9, colour=C_RED),
-        'b9': Card(value=9, colour=C_BLACK),
-        'r10': Card(value=10, colour=C_RED),
-        'b10': Card(value=10, colour=C_BLACK),
-        'c': Card(suit=1),
-        'd': Card(suit=2),
-        'h': Card(suit=3),
-        's': Card(suit=4),
-    }
-    cards = ['b6', 'b6', 'r6', 'r6', 'b7', 'b7', 'r7', 'r7', 
-             'b8', 'b8', 'r8', 'r8', 'b9', 'b9', 'r9', 'r9',
-             'b10', 'b10', 'r10', 'r10', 'c', 'c', 'c', 'c', 
-              'd', 'd', 'd', 'd', 'h', 'h', 'h', 'h', 's', 's', 's', 's']
-
-    results = []
-    skipped_games = 0
-    for _ in range(n):
-        random.shuffle(cards)
-        ranks = [
-            Rank(cards=[*map(card_dict.get, cards[:4])]),
-            Rank(cards=[*map(card_dict.get, cards[4:8])]),
-            Rank(cards=[*map(card_dict.get, cards[8:12])]),
-            Rank(cards=[*map(card_dict.get, cards[12:16])]),
-            Rank(cards=[*map(card_dict.get, cards[16:20])]),
-            Rank(cards=[*map(card_dict.get, cards[20:24])]),
-            Rank(cards=[*map(card_dict.get, cards[24:28])]),
-            Rank(cards=[*map(card_dict.get, cards[28:32])]),
-            Rank(cards=[*map(card_dict.get, cards[32:])]),
-        ]
-        board_state = Board(ranks)
-
-        results.append(timed_solve(board_state, stop_at_iterations))
-        moves = solve(board_state)
-        if moves is None: 
-            skipped_games+=1
-    
-    return results, skipped_games
-
-
-
-
 def main():
     import cProfile
     cProfile.run("benchmark()")
