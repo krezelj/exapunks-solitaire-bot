@@ -2,6 +2,8 @@
 
 This is a bot that automatically plays ПАСЬЯНС. A mini-game inside EXAPUNKS by Zachtronics (which I highly recommend!).
 
+[Here](https://www.youtube.com/watch?v=c3VqlBsqAdU&ab_channel=JasiekKr%C4%99%C5%BCel) is the video that shows it in action
+
 ## How does it work?
 
 The bot works in three stages. 
